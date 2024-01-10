@@ -8,7 +8,7 @@ import (
 type Person struct {
 	Name     string  `json:"name"`
 	Age      int     `json:"age"`
-	Height   float64 `json:"height,omitempty"`
+	height   float64 `json:"height,omitempty"` //not exported
 	Weight   float64 `json:"weight"`
 	Password string  `json:"-"`
 }
@@ -18,7 +18,7 @@ func main() {
 	p := Person{
 		Name:     "john",
 		Age:      30,
-		Height:   0.0,
+		height:   0.0,
 		Weight:   80.5,
 		Password: "123456",
 	}

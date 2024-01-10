@@ -1,4 +1,4 @@
-module github.com/jcanonbenavi/app
+module github.com/jcanonbenavi/code
 
 go 1.21.5
 
