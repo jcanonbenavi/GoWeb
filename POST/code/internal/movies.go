@@ -4,6 +4,6 @@ type Movie struct {
 	ID        int
 	Title     string
 	Year      int
-	Rated     string
+	Rated     float64
 	Published bool
 }

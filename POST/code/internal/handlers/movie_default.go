@@ -26,20 +26,20 @@ func NewDefaultMovies(movies map[int]internal.Movie, lastId int) *DefaultMovies 
 }
 
 type MovieJSON struct {
-	ID        int    `json:"id"`
-	Title     string `json:"title"`
-	Year      int    `json:"year"`
-	Rated     string `json:"rated"`
-	Published bool   `json:"published"`
+	ID        int     `json:"id"`
+	Title     string  `json:"title"`
+	Year      int     `json:"year"`
+	Rated     float64 `json:"rated"`
+	Published bool    `json:"published"`
 }
 
 // This type represents the expected structure of the JSON body for creating a new movie.
 // It includes fields for Title, Year, Rated, and Published.
 type BodyRequestMovieJSON struct {
-	Title     string `json:"title"`
-	Year      int    `json:"year"`
-	Rated     string `json:"rated"`
-	Published bool   `json:"published"`
+	Title     string  `json:"title"`
+	Year      int     `json:"year"`
+	Rated     float64 `json:"rated"`
+	Published bool    `json:"published"`
 }
 
 func (d *DefaultMovies) Create() http.HandlerFunc {
@@ -49,6 +49,22 @@ func (d *DefaultMovies) Create() http.HandlerFunc {
 		// If the decoding fails, it responds with a 400 Bad Request status and an "invalid body" message.
 		// Otherwise, it creates a new internal.Movie object from the decoded data, increments the lastID,
 		//assigns the new ID to the movie, and adds it to the map of movies.
+
+		//contentType := r.Header.Get("Content-Type") to know the type of content
+		// switch contentType{
+		// 	cases "application/json":
+		// 	case "application/xml":
+		// 	case "application/x-www-form-urlencoded":
+		// }
+
+		token := r.Header.Get("Authorization")
+		if token != "123456" {
+			w.Header().Set("Content-Type", "text/plain")
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte("invalid token"))
+			return
+		}
+
 		var body BodyRequestMovieJSON
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -73,6 +89,15 @@ func (d *DefaultMovies) Create() http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("invalid movie"))
 			return
+		}
+		// - validate if movie already exists
+		for _, mv := range (*d).movies {
+			if mv.Title == movie.Title {
+				w.Header().Set("Content-Type", "text/plain")
+				w.WriteHeader(http.StatusConflict)
+				w.Write([]byte("movie already exists"))
+				return
+			}
 		}
 
 		(*d).movies[movie.ID] = movie
