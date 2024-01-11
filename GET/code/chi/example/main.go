@@ -36,20 +36,35 @@ func (c *ControllerEmployee) GetById() http.HandlerFunc {
 			json.NewEncoder(w).Encode(body)
 			return
 		}
+		code := http.StatusOK
+		body := &ResponseGetByIdEmployee{
+			Message: "employee found",
+			Data: &struct {
+				Id   string `json:"id"`
+				Name string `json:"name"`
+			}{
+				Id:   id,
+				Name: c.st[id],
+			},
+			Error: false,
+		}
+		w.WriteHeader(code)
+		w.Header().Add("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(body)
 	}
 }
 
-//response
+func main() {
+	r := chi.NewRouter()
+	newEmployee := ControllerEmployee{
+		st: map[string]string{
+			"1": "Juan",
+			"2": "Pedro",
+			"3": "Maria",
+			"4": "Jose",
+		},
+	}
+	r.Get("/employees/{id}", newEmployee.GetById())
+	http.ListenAndServe(":8080", r)
 
-// func (c *ControllerEmployee) GetById() http.HandlerFunc {
-// 	return func(w http.ResponseWriter, r *http.Request) {
-// 		code := http.StatusOK
-// 		body := &ResponseGetByIdEmployee{Message: "employee found", Data: &struct {
-// 			Id   string `json:"id"`
-// 			Name string `json:"name"`
-// 		}{Id: Id, Name: employee}, Error: false},
-// 			w.WriteHeader(code)
-// 		w.Header().Add("Content-Type", "application/json")
-// 		json.NewEncoder(w).Encode(body)
-// 	}
-// }
+}
