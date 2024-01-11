@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -33,7 +34,9 @@ func (c *ControllerEmployee) GetById() http.HandlerFunc {
 			body := &ResponseGetByIdEmployee{Message: "employee not found", Data: nil, Error: true}
 			w.WriteHeader(code)
 			w.Header().Add("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(body)
+			if err := json.NewEncoder(w).Encode(body); err != nil {
+				fmt.Println("error encoding response", code)
+			}
 			return
 		}
 		code := http.StatusOK
