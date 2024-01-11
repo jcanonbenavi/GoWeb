@@ -26,5 +26,5 @@ func main() {
 		w.Write([]byte(`{"message": "pong", "method": "POST"}`))
 	})
 
-	http.ListenAndServe(":6060", router)
+	http.ListenAndServe(":8080", router)
 }
