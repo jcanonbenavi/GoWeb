@@ -2,19 +2,26 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/jcanonbenavi/app/internal"
+	"github.com/jcanonbenavi/app/platform/web/request"
+	"github.com/jcanonbenavi/app/platform/web/response"
 )
 
-// type DefaultProduct struct {
-// 	product map[int]internal.Product
-// 	lastID  int
-// }
+type DefaultProduct struct {
+	service internal.ProductService
+}
+
+func NewDefaultProduct(service internal.ProductService) *DefaultProduct {
+	return &DefaultProduct{
+		service: service,
+	}
+}
 
 type BodyRequest struct {
 	Id          int     `json:"id"`
@@ -34,77 +41,104 @@ type BodyRequestProductJSON struct {
 	Expiration  string  `json:"expiration"`
 	Price       float64 `json:"price"`
 }
-type ProductsData struct {
-	products []*internal.Product
-}
 
-func (p *ProductsData) Create() http.HandlerFunc {
+func (p *DefaultProduct) Create() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		var body BodyRequestProductJSON
-		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Header().Set("Content-Type", "text/plain")
-			w.Write([]byte("wrong request"))
-			return
+		if err := request.JSON(r, &body); err != nil {
+			response.Text(w, http.StatusBadRequest, "Invalid request body")
 		}
-		p.products = append(p.products, &internal.Product{
-			Id:          len(p.products) + 1,
+
+		products := internal.Product{
 			Name:        body.Name,
 			Quantity:    body.Quantity,
 			CodeValue:   body.CodeValue,
 			IsPublished: body.IsPublished,
 			Expiration:  body.Expiration,
 			Price:       body.Price,
-		})
-		w.WriteHeader(http.StatusCreated)
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(p.products)
+		}
+		if err := p.service.Save(&products); err != nil {
+			switch {
+			case errors.Is(err, internal.ErrFieldRequired), errors.Is(err, internal.ErrFieldQuality):
+				response.Text(w, http.StatusBadRequest, "invalid body")
+			case errors.Is(err, internal.ErrProductAlreadyExists):
+				response.Text(w, http.StatusConflict, "Product already exists")
+			default:
+				response.Text(w, http.StatusInternalServerError, "internal server error")
+			}
+			return
 
+		}
+
+		data := BodyRequest{
+			Id:          products.Id,
+			Name:        products.Name,
+			Quantity:    products.Quantity,
+			CodeValue:   products.CodeValue,
+			IsPublished: products.IsPublished,
+			Expiration:  products.Expiration,
+			Price:       products.Price,
+		}
+
+		response.JSON(w, http.StatusCreated, map[string]any{
+			"message": "Product created successfully",
+			"data":    data,
+		})
 	}
 }
 
-func (p *ProductsData) LoadDataFromJson() (product ProductsData, err error) {
+func (p *DefaultProduct) LoadDataFromJson() (product internal.Product) {
 	fileContent, err := os.ReadFile("products.json")
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = json.Unmarshal(fileContent, &p.products)
-	if err != nil {
+	errorjson := json.Unmarshal(fileContent, p.service.Save(&product))
+	if errorjson != nil {
 		log.Fatal(err)
 	}
 	return
 }
 
-func (p *ProductsData) GetProducts() http.HandlerFunc {
+func (p *DefaultProduct) Get() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		//p.LoadDataFromJson()
-		if err := json.NewEncoder(w).Encode(&p.products); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Header().Set("Content-Type", "text/plain")
-			w.Write([]byte("wrong request"))
+		elements, err := p.service.Get()
+		if err != nil {
+			fmt.Println(err)
 			return
 		}
-		code := http.StatusOK
-		w.WriteHeader(code)
-		w.Header().Add("Content-Type", "application/json")
 
-	}
-}
-
-func (p *ProductsData) GetById() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		id, _ := strconv.Atoi(chi.URLParam(r, "id"))
-		for _, product := range p.products {
-			if product.Id == id {
-				w.WriteHeader(http.StatusCreated)
-				w.Header().Set("Content-Type", "application/json")
-				responseJSON := BodyRequest(*product)
-				err := json.NewEncoder(w).Encode(responseJSON)
-				if err != nil {
-					log.Fatal(err)
-				}
+		for _, v := range elements {
+			products := BodyRequest{
+				Id:          v.Id,
+				Name:        v.Name,
+				Quantity:    v.Quantity,
+				CodeValue:   v.CodeValue,
+				IsPublished: v.IsPublished,
+				Expiration:  v.Expiration,
+				Price:       v.Price,
 			}
+			response.JSON(w, http.StatusOK, map[string]any{
+				"data": products,
+			})
 		}
 	}
+
 }
+
+// func (p *ProductsData) GetById() http.HandlerFunc {
+// 	return func(w http.ResponseWriter, r *http.Request) {
+// 		id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+// 		for _, product := range p.products {
+// 			if product.Id == id {
+// 				w.WriteHeader(http.StatusCreated)
+// 				w.Header().Set("Content-Type", "application/json")
+// 				responseJSON := BodyRequest(*product)
+// 				err := json.NewEncoder(w).Encode(responseJSON)
+// 				if err != nil {
+// 					log.Fatal(err)
+// 				}
+// 			}
+// 		}
+// 	}
+// }

@@ -1,11 +1,9 @@
 package main
 
 import (
-	"log"
-	"net/http"
+	"fmt"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/jcanonbenavi/app/internal/handlers"
+	"github.com/jcanonbenavi/app/internal/application"
 )
 
 // type Data struct {
@@ -21,20 +19,27 @@ import (
 //var products []Data
 
 func main() {
-	router := chi.NewRouter()
-	productsdata := handlers.ProductsData{}
-	router.Route("/", func(r chi.Router) {
-		productsdata.LoadDataFromJson()
-		router.Get("/products", productsdata.GetProducts())
-		// user by id
-		router.Get("/products/{id}", productsdata.GetById())
+	app := application.NewDefaultHTTP(":8080")
 
-		router.Post("/products", productsdata.Create())
-
-	})
-	err := http.ListenAndServe(":8080", router)
-	if err != nil {
-		log.Fatal(err)
+	if err := app.Run(); err != nil {
+		fmt.Println(err)
+		return
 	}
+
+	// router := chi.NewRouter()
+	// productsdata := handlers.ProductsData{}
+	// router.Route("/", func(r chi.Router) {
+	// 	productsdata.LoadDataFromJson()
+	// 	router.Get("/products", productsdata.GetProducts())
+	// 	// user by id
+	// 	router.Get("/products/{id}", productsdata.GetById())
+
+	// 	router.Post("/products", productsdata.Create())
+
+	// })
+	// err := http.ListenAndServe(":8080", router)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
 }

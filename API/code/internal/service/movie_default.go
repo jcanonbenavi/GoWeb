@@ -6,18 +6,19 @@ import (
 	"github.com/jcanonbenavi/code/internal"
 )
 
+type MovieDefault struct {
+	//repository
+	rp internal.MovieRepository
+}
+
 func NewMovieDefault(rp internal.MovieRepository) *MovieDefault {
 	return &MovieDefault{
 		rp: rp,
 	}
 }
 
-type MovieDefault struct {
-	//repository
-	rp internal.MovieRepository
-}
-
-func (m *MovieDefault) Save(movie *internal.Movie) (err error) {
+func ValidateMovie(movie *internal.Movie) (err error) {
+	// - validate required fields
 	if (*movie).Title == "" {
 		return fmt.Errorf("%w: title", internal.ErrFieldRequired)
 	}
@@ -32,11 +33,64 @@ func (m *MovieDefault) Save(movie *internal.Movie) (err error) {
 		return fmt.Errorf("%w: year", internal.ErrFieldQuality)
 	}
 
+	return
+}
+
+func (m *MovieDefault) Save(movie *internal.Movie) (err error) {
+	if err = ValidateMovie(movie); err != nil {
+		return
+	}
+
 	err = m.rp.Save(movie)
 	if err != nil {
 		switch err {
-		case internal.ErrMovieAlreadyExists: //error return by repository
-			return fmt.Errorf("%w: movie", internal.ErrorMovieAlreadyExists) //service error
+		case internal.ErrMovieTitleAlreadyExists: //error return by repository
+			err = fmt.Errorf("%w: movie", internal.ErrMovieAlreadyExists) //service error
+		}
+		return
+	}
+	return
+}
+
+func (m *MovieDefault) GetByID(id int) (movie internal.Movie, err error) {
+	// get movie
+	movie, err = m.rp.GetByID(id)
+	if err != nil {
+		switch err {
+		case internal.ErrMovieNotFound:
+			err = fmt.Errorf("%w: id", internal.ErrMovieNotFound)
+		}
+		return
+	}
+
+	return
+}
+
+func (m *MovieDefault) Update(movie *internal.Movie) (err error) {
+	// validate
+	if err = ValidateMovie(movie); err != nil {
+		return
+	}
+
+	// update movie
+	err = m.rp.Update(movie)
+	if err != nil {
+		switch err {
+		case internal.ErrMovieNotFound:
+			err = fmt.Errorf("%w: id", internal.ErrMovieNotFound)
+		}
+		return
+	}
+	return
+}
+
+func (m *MovieDefault) Delete(id int) (err error) {
+	// delete movie
+	err = m.rp.Delete(id)
+	if err != nil {
+		switch err {
+		case internal.ErrMovieNotFound:
+			err = fmt.Errorf("%w: id", internal.ErrMovieNotFound)
 		}
 		return
 	}
