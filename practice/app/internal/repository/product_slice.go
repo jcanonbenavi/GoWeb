@@ -32,3 +32,13 @@ func (p *ProductsData) Get() (elements []internal.Product, err error) {
 	}
 	return
 }
+
+func (p *ProductsData) GetByID(id int) (product *internal.Product, err error) {
+	for _, products := range (*p).productsSlice {
+		if products.Id == id {
+			return &products, nil
+
+		}
+	}
+	return nil, internal.ErrNotFound
+}

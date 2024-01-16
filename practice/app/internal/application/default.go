@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/jcanonbenavi/app/internal"
 	"github.com/jcanonbenavi/app/internal/handlers"
+	"github.com/jcanonbenavi/app/internal/loader"
 	"github.com/jcanonbenavi/app/internal/repository"
 	"github.com/jcanonbenavi/app/internal/service"
 )
@@ -21,7 +21,9 @@ type DefaultHHTTP struct {
 }
 
 func (d *DefaultHHTTP) Run() (err error) {
-	repository := repository.NewProductSlice([]internal.Product{})
+	products, err := loader.LoadDataFromJson()
+	repository := repository.NewProductSlice(products)
+	//repository := repository.NewProductSlice([]internal.Product{})
 	service := service.NewProductDefault(repository)
 	handlers := handlers.NewDefaultProduct(service)
 	router := chi.NewRouter()

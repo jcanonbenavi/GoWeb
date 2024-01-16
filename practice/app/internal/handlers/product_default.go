@@ -1,12 +1,9 @@
 package handlers
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
-	"os"
 
 	"github.com/jcanonbenavi/app/internal"
 	"github.com/jcanonbenavi/app/platform/web/request"
@@ -86,18 +83,6 @@ func (p *DefaultProduct) Create() http.HandlerFunc {
 			"data":    data,
 		})
 	}
-}
-
-func (p *DefaultProduct) LoadDataFromJson() (product internal.Product) {
-	fileContent, err := os.ReadFile("products.json")
-	if err != nil {
-		log.Fatal(err)
-	}
-	errorjson := json.Unmarshal(fileContent, p.service.Save(&product))
-	if errorjson != nil {
-		log.Fatal(err)
-	}
-	return
 }
 
 func (p *DefaultProduct) Get() http.HandlerFunc {

@@ -10,4 +10,5 @@ var (
 type ProductRepository interface {
 	Save(product *Product) (err error)
 	Get() (elements []Product, err error)
+	GetByID(id int) (product *Product, err error)
 }
